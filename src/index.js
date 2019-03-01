@@ -3,7 +3,7 @@ const registerTask = require('./task');
 
 const cypressPaths = {
   SCREENSHOT_FOLDER: 'cypress/match-screenshots',
-  ROOT_FOLDER: ''
+  ROOT_FOLDER: '../' //account for @sqs nesting
 };
 
 /**
