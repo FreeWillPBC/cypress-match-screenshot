@@ -1,5 +1,8 @@
 # cypress-match-screenshot
 
+## Note
+This is an internal, forked version of the library in the public registry. The motivation for forking was to [incorporate this PR](https://github.com/julianburr/cypress-match-screenshot/pull/19). Should that PR be accepted (or solved in some other way) we should retire our internal fork.
+
 [![npm version](https://img.shields.io/npm/v/cypress-match-screenshot.svg)](https://www.npmjs.com/package/cypress-match-screenshot)
 
 Utility to take screenshots during a cypress test and match them against previous runs.
