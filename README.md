@@ -11,7 +11,7 @@ Cypress is actively working on a feature like this, see [https://github.com/cypr
 ## Usage
 
 ```bash
-yarn add cypress-match-screenshot --dev
+npm install --save-dev cypress-match-screenshot
 ```
 
 Then register the custom command in your `cypress/support/commands.js` file:
@@ -38,7 +38,7 @@ That's it, now you can use the feature like this:
 describe('Example', function () {
   it('Should match screenshot', function () {
     cy.visit('https://google.com');
-    cy.matchScreenshot('Google Screenshot');
+    cy.matchScreenshot();
   });
 });
 ```
@@ -94,8 +94,10 @@ The general rule for screenshot naming is: `[Test Suit Name] -- [Test Name] -- [
 
 **options**
 
- * **threshold**: Threshold for the screenshot matching, default: `0.005`
+ * **threshold**: Threshold for the screenshot matching, default: `0`
  * **thresholdType**: unit for the threshold,`pixel` or `percent`, default: `percent`
+ * **blackout**: List of selectors to black out when taking the screenshot, default: `[]`
+ * **capture**: `fullPage`, `viewport`, or `runner`. default: `fullPage`
 
 ## Update screenshots
 
