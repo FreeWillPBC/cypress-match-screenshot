@@ -12,6 +12,7 @@ declare namespace Cypress {
         thresholdType?: 'pixel' | 'percent';
         blackout?: string[];
         maxRetries?: number;
+        capture?: 'fullPage' | 'viewport' | 'runner'
     }
 
     interface Chainable<Subject = any> {
