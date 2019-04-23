@@ -21,6 +21,17 @@ import { register } from 'cypress-match-screenshot';
 register();
 ```
 
+Next, register the custom tasks in your `cypress/plugins/index.js` file:
+
+```js
+// required for older versions of node
+const registerTask = require('cypress-match-screenshot').registerTask;
+
+module.exports = (on, config) => {
+  registerTask(on, config);
+};
+```
+
 That's it, now you can use the feature like this:
 
 ```js
@@ -32,7 +43,7 @@ describe('Example', function () {
 });
 ```
 
-On the first run the assertion will always pass and the tool will just store the screenshot. On subsequent runs it will take a screenshot and compare it to the previous one. Only if the difference is below the threshold the assertion will pass and the old screenshot will be replaced by the new one.
+On the first run the assertion will always pass and the tool will just store the screenshot. On subsequent runs it will take a screenshot and compare it to the previous one. Only if the difference is below the threshold will the assertion pass.
 
 You can find all diffs as images in `cypress/screenshots/diff` to see what excactly changed 😊
 
@@ -88,7 +99,8 @@ The general rule for screenshot naming is: `[Test Suit Name] -- [Test Name] -- [
 
 ## Update screenshots
 
-If you want to update the base screenshots with the new generated set, put the `updateScreenshots` parameter to your Cypress config. This will allow your tests to pass and the base screenshots being replaced by the new ones.
+If you want to update the base screenshots with the new generated set, pass `updateScreenshots=true` as an environment variable, e.g. `cypress run --env updateScreenshots=true`. 
+This will allow your tests to pass and the base screenshots being replaced by the new ones.
 
 ## Todos
 
