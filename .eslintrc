@@ -1,0 +1,15 @@
+{
+  "extends": ["eslint-config-squarespace/vanilla", "plugin:cypress/recommended"],
+  "env": {
+    "node": true,
+    "mocha": true,
+    "cypress/globals": true
+  },
+  "plugins": [
+    "cypress"
+  ],
+  "globals": {
+  },
+  "settings": {
+  }
+}

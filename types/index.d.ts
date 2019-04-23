@@ -10,6 +10,8 @@ declare namespace Cypress {
     interface MatchScreenshotOptions {
         threshold: number;
         thresholdType: 'pixel' | 'percent';
+        blackout: string[];
+        maxRetries: number;
     }
 
     interface Chainable<Subject = any> {

@@ -1,16 +1,21 @@
 {
-  "name": "cypress-match-screenshot",
+  "name": "@sqs/cypress-match-screenshot-2",
   "version": "1.1.0",
   "description": "Utility to take screenshots during a cypress test and match them against previous runs",
   "main": "src/index.js",
-  "bin": {
-    "cypress-diff-screenshot": "src/diff-screenshot.js"
+  "scripts": {
+    "lint": "eslint --ext .js src",
+    "lint:fix": "eslint --fix --ext .js src"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/julianburr/cypress-match-screenshot.git"
   },
-  "keywords": ["cypress", "screenshot", "diffing"],
+  "keywords": [
+    "cypress",
+    "screenshot",
+    "diffing"
+  ],
   "author": "Julian Burr <hello@julianburr.de>",
   "license": "MIT",
   "bugs": {
@@ -19,10 +24,16 @@
   "homepage": "https://github.com/julianburr/cypress-match-screenshot#readme",
   "dependencies": {
     "blink-diff": "^1.0.13",
+    "cypress-promise": "^1.0.2",
     "path": "^0.12.7",
-    "yargs": "^11.0.0",
-    "image-size": "^0.6.2",
-    "jimp": "^0.2.28"
+    "touch": "^3.1.0",
+    "uuid": "^3.3.2"
   },
-  "types": "types/index.d.ts"
+  "types": "types/index.d.ts",
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.16.0",
+    "eslint-config-squarespace": "^1.0.1",
+    "eslint-plugin-cypress": "^2.2.1"
+  }
 }
