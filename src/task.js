@@ -18,6 +18,13 @@ function registerTask(on, config) {
         fs.rename(from, to, resolve);
       });
     },
+    copy({ from, to }) {
+      return new Promise(function (resolve, reject) {
+        fs.createReadStream(from).pipe(fs.createWriteStream(to)).on('finish', () => {
+          resolve(null);
+        });
+      });
+    },
     unlink(path) {
       return new Promise(function(resolve, reject) {
         fs.unlink(path, resolve);

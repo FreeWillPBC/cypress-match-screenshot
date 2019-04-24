@@ -29,12 +29,16 @@ const getPaths = (fileName) => {
   const stableImagePath = path.join(stableSetDir, fileName + '.png');
   const diffDir = path.join(stableSetDir, 'diff');
   const diffImagePath = path.join(diffDir, fileName + '.png');
+  const newDir = path.join(stableSetDir, 'new');
+  const newImagePath = path.join(newDir, fileName + '.png');
 
   return {
-    stableSetDir,
-    stableImagePath,
     diffDir,
-    diffImagePath
+    diffImagePath,
+    newDir,
+    newImagePath,
+    stableImagePath,
+    stableSetDir,
   };
 };
 
@@ -82,6 +86,21 @@ const hasStableImage = (fileName) => {
   return cy.task('exists', stableImagePath);
 };
 
+// All new images are copied here for inspection by the user
+// These files are not used by this program.
+const copyToNewDir = (fileName, newImage, cb) => {
+  const { newDir, newImagePath } = getPaths(fileName);
+  cy.task('mkdir', newDir)
+    .then(() => {
+      cy.task('copy', { from: newImage, to: newImagePath })
+        .then(() => {
+          if (cb) {
+            cb();
+          }
+        });
+    });
+};
+
 /**
  * Takes a screenshot and, if available, matches it against the screenshot
  * from the previous test run. Assertion will fail if the diff is larger than
@@ -102,26 +121,30 @@ function matchScreenshot(
       if (hasStable) {
         attemptToMatch(fileName, { threshold, thresholdType, maxRetries, blackout, capture },
           ({ matches, newImage }) => {
-            const shouldUpdateStableSet = Cypress.env('updateScreenshots');
-            if (shouldUpdateStableSet) {
-              if (matches) {
-                cy.log('Screenshots match');
-                cy.task('unlink', newImage);
-              } else {
-                makeStable(fileName, newImage);
+            copyToNewDir(fileName, newImage, () => {
+              const shouldUpdateStableSet = Cypress.env('updateScreenshots');
+              if (shouldUpdateStableSet) {
+                if (matches) {
+                  cy.log('Screenshots match');
+                  cy.task('unlink', newImage);
+                } else {
+                  makeStable(fileName, newImage);
+                }
               }
-            }
-            if (!shouldUpdateStableSet) {
-              cy.task('unlink', newImage)
-                .then(() => { assert.isTrue(matches, 'Screenshots match'); });
-
-            }
+              if (!shouldUpdateStableSet) {
+                cy.task('unlink', newImage)
+                  .then(() => { assert.isTrue(matches, 'Screenshots match'); });
+              }
+            });
           });
 
       } else {
         // Does not have existing screenshot
         cy.log('Taking new screenshot');
-        takeScreenshot({ blackout, capture }, (newImage) => makeStable(fileName, newImage));
+        takeScreenshot({ blackout, capture }, (newImage) => {
+          copyToNewDir(fileName, newImage);
+          makeStable(fileName, newImage);
+        });
       }
     });
 
