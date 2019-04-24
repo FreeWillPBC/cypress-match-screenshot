@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/julianburr/cypress-match-screenshot.git"
+    "url": "https://code.squarespace.net/scm/webm/cypress-match-screenshot.git"
   },
   "keywords": [
     "cypress",
