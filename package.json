@@ -17,6 +17,10 @@
     "diffing"
   ],
   "author": "Julian Burr <hello@julianburr.de>",
+  "contributors": [
+    "Dave Myers <dmyers@squarespace.com>",
+    "Julian Boilen <jboilen@squarespace.com>"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/julianburr/cypress-match-screenshot/issues"
