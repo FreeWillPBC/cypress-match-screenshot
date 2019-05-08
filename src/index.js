@@ -60,6 +60,10 @@ const attemptToMatch =
         thresholdType
       }, (matches) => {
         if (matches || maxRetries < 1) {
+          if (matches) {
+            // Delete diffs that don't show anything
+            cy.task('unlink', diffImagePath);
+          }
           cb({ matches, newImage });
         } else {
           // Try again
@@ -86,7 +90,7 @@ const hasStableImage = (fileName) => {
   return cy.task('exists', stableImagePath);
 };
 
-// All new images are copied here for inspection by the user
+// All non-matching new images are copied here for inspection by the user
 // These files are not used by this program.
 const copyToNewDir = (fileName, newImage, cb) => {
   const { newDir, newImagePath } = getPaths(fileName);
@@ -121,21 +125,28 @@ function matchScreenshot(
       if (hasStable) {
         attemptToMatch(fileName, { threshold, thresholdType, maxRetries, blackout, capture },
           ({ matches, newImage }) => {
-            copyToNewDir(fileName, newImage, () => {
-              const shouldUpdateStableSet = Cypress.env('updateScreenshots');
-              if (shouldUpdateStableSet) {
-                if (matches) {
-                  cy.log('Screenshots match');
-                  cy.task('unlink', newImage);
-                } else {
+            const shouldUpdateStableSet = Cypress.env('updateScreenshots');
+            if (shouldUpdateStableSet) {
+              if (matches) {
+                cy.log('Screenshots match');
+                cy.task('unlink', newImage);
+              } else {
+                copyToNewDir(fileName, newImage, () => {
                   makeStable(fileName, newImage);
-                }
+                });
               }
-              if (!shouldUpdateStableSet) {
+            }
+            if (!shouldUpdateStableSet) {
+              const deleteScreenshotAndAssertMatch = () =>
                 cy.task('unlink', newImage)
                   .then(() => { assert.isTrue(matches, 'Screenshots match'); });
+
+              if (matches) {
+                deleteScreenshotAndAssertMatch();
+              } else {
+                copyToNewDir(fileName, newImage, deleteScreenshotAndAssertMatch);
               }
-            });
+            }
           });
 
       } else {
