@@ -8,11 +8,14 @@
 
 declare namespace Cypress {
     interface MatchScreenshotOptions {
-        threshold: number;
-        thresholdType: 'pixel' | 'percent';
+        threshold?: number;
+        thresholdType?: 'pixel' | 'percent';
+        blackout?: string[];
+        maxRetries?: number;
+        capture?: 'fullPage' | 'viewport' | 'runner'
     }
 
     interface Chainable<Subject = any> {
-        matchScreenshot(name: string, options?: MatchScreenshotOptions): Chainable<null>;
+        matchScreenshot(name?: string, options?: MatchScreenshotOptions): Chainable<null>;
     }
 }

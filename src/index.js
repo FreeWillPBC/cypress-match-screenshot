@@ -1,33 +1,110 @@
 const path = require('path');
+const uuid = require('uuid/v1');
 const registerTask = require('./task');
+const screenshotMatches = require('./screenshotMatches');
 
-const cypressPaths = {
-  SCREENSHOT_FOLDER: 'cypress/match-screenshots',
-  ROOT_FOLDER: '../' //account for @sqs nesting
+const DEFAULT_MATCH_FOLDER = 'cypress/match-screenshots';
+
+// Take screenshot, return path asynchonously.
+function takeScreenshot({ blackout, capture }, cb) {
+  let newImage;
+  cy
+    .screenshot(uuid(), {
+      log: false,
+      onAfterScreenshot($el, props) {
+        newImage = props.path;
+      },
+      blackout,
+      capture
+    })
+    .then(() => {
+      cb(newImage);
+    });
+}
+
+
+const getPaths = (fileName) => {
+  const stableSetDirRelative = Cypress.config('matchScreenshotsFolder') || DEFAULT_MATCH_FOLDER;
+  const stableSetDir = path.join(Cypress.config('fileServerFolder'), stableSetDirRelative);
+  const stableImagePath = path.join(stableSetDir, fileName + '.png');
+  const diffDir = path.join(stableSetDir, 'diff');
+  const diffImagePath = path.join(diffDir, fileName + '.png');
+  const newDir = path.join(stableSetDir, 'new');
+  const newImagePath = path.join(newDir, fileName + '.png');
+
+  return {
+    diffDir,
+    diffImagePath,
+    newDir,
+    newImagePath,
+    stableImagePath,
+    stableSetDir,
+  };
 };
 
-/**
- * Creates unique id strings
- * @return {String}
- */
-function uuid () {
-  return ([ 1e7 ] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (a) =>
-    (a ^ ((Math.random() * 16) >> (a / 4))).toString(16)
-  );
-}
+const attemptToMatch =
+  (fileName, { threshold, thresholdType, maxRetries, blackout, capture }, cb) => {
+    const { stableImagePath, diffImagePath, diffDir } = getPaths(fileName);
 
-/**
- * Get relative path
- * @param  {String} str
- * @return {String}
- */
-function relPath (str) {
-  return path.join(
-    cypressPaths.ROOT_FOLDER,
-    cypressPaths.SCREENSHOT_FOLDER,
-    str
-  );
-}
+    // Ensure that the diff folder exists
+    cy.task('mkdir', diffDir);
+
+
+    cy.log('Taking screenshot');
+    takeScreenshot({ blackout, capture }, (newImage) => {
+      screenshotMatches({
+        oldImage: stableImagePath,
+        newImage: newImage,
+        target: diffImagePath,
+        threshold,
+        thresholdType
+      }, (matches) => {
+        if (matches || maxRetries < 1) {
+          if (matches) {
+            // Delete diffs that don't show anything
+            cy.task('unlink', diffImagePath);
+          }
+          cb({ matches, newImage });
+        } else {
+          // Try again
+          cy.task('unlink', newImage);
+          attemptToMatch(fileName, { threshold, thresholdType, maxRetries: maxRetries - 1, blackout, capture }, cb);
+        }
+      });
+    });
+  };
+
+const makeStable = (fileName, newImage) => {
+  const { stableImagePath, diffImagePath } = getPaths(fileName);
+  cy.log('Updating stable set');
+  cy.task('rename', {
+    from: newImage,
+    to: stableImagePath
+  });
+  cy.task('unlink', diffImagePath);
+};
+
+const hasStableImage = (fileName) => {
+  const { stableImagePath } = getPaths(fileName);
+
+  return cy.task('exists', stableImagePath);
+};
+
+// All non-matching new images are copied here for inspection by the user
+// These files are not used by this program.
+const copyToNewDir = (fileName, newImage, cb) => {
+  const { newDir, newImagePath } = getPaths(fileName);
+  cy.task('mkdir', newDir)
+    .then(() => {
+      cy.task('copy', { from: newImage, to: newImagePath })
+        .then(() => {
+          if (cb) {
+            cb();
+          }
+        });
+    });
+};
+
 /**
  * Takes a screenshot and, if available, matches it against the screenshot
  * from the previous test run. Assertion will fail if the diff is larger than
@@ -35,98 +112,61 @@ function relPath (str) {
  * @param  {String} name
  * @param  {Object} options
  */
-function matchScreenshot (name, options = {}) {
-  const fileName = `${this.test.parent.title} -- ${this.test.title} -- ${name}`;
+function matchScreenshot(
+  name, { threshold = '0', thresholdType = 'percent', maxRetries = 3, blackout = [], capture = 'fullPage' } = {}) {
+  const fileNameParts = [this.test.parent.title, this.test.title];
+  if (typeof name === 'string') {
+    fileNameParts.push(name);
+  }
+  const fileName = fileNameParts.join(' -- ');
 
-  cy.log('Taking screenshot');
+  hasStableImage(fileName)
+    .then((hasStable) => {
+      if (hasStable) {
+        attemptToMatch(fileName, { threshold, thresholdType, maxRetries, blackout, capture },
+          ({ matches, newImage }) => {
+            const shouldUpdateStableSet = Cypress.env('updateScreenshots');
+            if (shouldUpdateStableSet) {
+              if (matches) {
+                cy.log('Screenshots match');
+                cy.task('unlink', newImage);
+              } else {
+                copyToNewDir(fileName, newImage, () => {
+                  makeStable(fileName, newImage);
+                });
+              }
+            }
+            if (!shouldUpdateStableSet) {
+              const deleteScreenshotAndAssertMatch = () =>
+                cy.task('unlink', newImage)
+                  .then(() => { assert.isTrue(matches, 'Screenshots match'); });
 
-  // Ensure that the screenshot folders exist
-  const newDir = `${cypressPaths.SCREENSHOT_FOLDER}/new`;
-  const diffDir = `${cypressPaths.SCREENSHOT_FOLDER}/diff`;
-  cy.task('mkdir', newDir);
-  cy.task('mkdir', diffDir);
+              if (matches) {
+                deleteScreenshotAndAssertMatch();
+              } else {
+                copyToNewDir(fileName, newImage, deleteScreenshotAndAssertMatch);
+              }
+            }
+          });
 
-  // we need to touch the old file for the first run,
-  // we'll check later if the file actually has any content
-  // in it or not
-  cy.task('touch', `${cypressPaths.SCREENSHOT_FOLDER}/${fileName}.png`);
-
-  const id = uuid();
-  let path = null;
-  cy
-    .screenshot(id, {
-      log: false,
-      onAfterScreenshot ($el, props) {
-        // Store path of screenshot that has been taken
-        // This is a reliable way for moving that screenshot file
-        //  in the next step!
-        path = props.path;
-      }
-    })
-    .then(() => {
-      console.log('Move screenshot');
-      const oldPath = `${cypressPaths.SCREENSHOT_FOLDER}/${fileName}.png`;
-      const newPath = `${cypressPaths.SCREENSHOT_FOLDER}/new/${fileName}.png`;
-
-      cy.task('rename', { from: path, to: newPath });
-
-      cy.log('Screenshot taken');
-      cy
-        .readFile(oldPath, 'utf-8', {
-          log: false
-        })
-        .then((value) => {
-          if (value) {
-            cy.log('Matching screenshot...');
-            cy
-              .exec(
-                `cypress-diff-screenshot ` +
-                  `--pathOld="${relPath(`${fileName}.png`)}" ` +
-                  `--pathNew="${relPath(`new/${fileName}.png`)}" ` +
-                  `--target="${relPath(`diff/${fileName}.png`)}" ` +
-                  `--threshold=${options.threshold || '0.005'} ` +
-                  `--thresholdType=${options.thresholdType || ''} `,
-                { log: false }
-              )
-              .then((result) => {
-                console.log(`Matched screenshot - Passed: ${result.stdout}`);
-                const matches = result.stdout === 'Yay';
-                if (Cypress.config('updateScreenshots') || matches) {
-                  cy.task('rename', {
-                    from: `${cypressPaths.SCREENSHOT_FOLDER}/new/${fileName}.png`,
-                    to: `${cypressPaths.SCREENSHOT_FOLDER}/${fileName}.png`
-                  });
-                  cy.task('unlink', `${cypressPaths.SCREENSHOT_FOLDER}/diff/${fileName}.png`);
-                }
-                if (!Cypress.config('updateScreenshots')) {
-                  assert.isTrue(matches, 'Screenshots match');
-                }
-              });
-          } else {
-            cy.log('No previous screenshot found to match against!');
-            cy.task('rename', {
-              from: `${cypressPaths.SCREENSHOT_FOLDER}/new/${fileName}.png`,
-              to: `${cypressPaths.SCREENSHOT_FOLDER}/${fileName}.png`
-            });
-          }
+      } else {
+        // Does not have existing screenshot
+        cy.log('Taking new screenshot');
+        takeScreenshot({ blackout, capture }, (newImage) => {
+          copyToNewDir(fileName, newImage);
+          makeStable(fileName, newImage);
         });
+      }
     });
-}
 
+}
 /**
  * Register `matchScreenshot` custom command
  * @param  {String} - optional custom name for command
  * @param  {String} - optional custom root dir path
  */
-function register (
-  commandName = 'matchScreenshot',
-  cypressRootFolder = cypressPaths.ROOT_FOLDER
-) {
-  cypressPaths.ROOT_FOLDER = cypressRootFolder;
+function register (commandName = 'matchScreenshot') {
   Cypress.Commands.add(commandName, matchScreenshot);
 }
 
-module.exports = {
-  register,
-  registerTask
-};
+module.exports = { register, registerTask };

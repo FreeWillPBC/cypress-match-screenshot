@@ -1,8 +1,5 @@
 # cypress-match-screenshot
 
-## Note
-This is an internal, forked version of the library in the public registry. The motivation for forking was to [incorporate this PR](https://github.com/julianburr/cypress-match-screenshot/pull/19). Should that PR be accepted (or solved in some other way) we should retire our internal fork.
-
 [![npm version](https://img.shields.io/npm/v/cypress-match-screenshot.svg)](https://www.npmjs.com/package/cypress-match-screenshot)
 
 Utility to take screenshots during a cypress test and match them against previous runs.
@@ -14,7 +11,7 @@ Cypress is actively working on a feature like this, see [https://github.com/cypr
 ## Usage
 
 ```bash
-yarn add cypress-match-screenshot --dev
+npm install --save-dev cypress-match-screenshot
 ```
 
 Then register the custom command in your `cypress/support/commands.js` file:
@@ -27,7 +24,7 @@ register();
 Next, register the custom tasks in your `cypress/plugins/index.js` file:
 
 ```js
-// require for older versions of node
+// required for older versions of node
 const registerTask = require('cypress-match-screenshot').registerTask;
 
 module.exports = (on, config) => {
@@ -41,12 +38,12 @@ That's it, now you can use the feature like this:
 describe('Example', function () {
   it('Should match screenshot', function () {
     cy.visit('https://google.com');
-    cy.matchScreenshot('Google Screenshot');
+    cy.matchScreenshot();
   });
 });
 ```
 
-On the first run the assertion will always pass and the tool will just store the screenshot. On subsequent runs it will take a screenshot and compare it to the previous one. Only if the difference is below the threshold the assertion will pass and the old screenshot will be replaced by the new one.
+On the first run the assertion will always pass and the tool will just store the screenshot. On subsequent runs it will take a screenshot and compare it to the previous one. Only if the difference is below the threshold will the assertion pass.
 
 You can find all diffs as images in `cypress/screenshots/diff` to see what excactly changed 😊
 
@@ -97,12 +94,15 @@ The general rule for screenshot naming is: `[Test Suit Name] -- [Test Name] -- [
 
 **options**
 
- * **threshold**: Threshold for the screenshot matching, default: `0.005`
+ * **threshold**: Threshold for the screenshot matching, default: `0`
  * **thresholdType**: unit for the threshold,`pixel` or `percent`, default: `percent`
+ * **blackout**: List of selectors to black out when taking the screenshot, default: `[]`
+ * **capture**: `fullPage`, `viewport`, or `runner`. default: `fullPage`
 
 ## Update screenshots
 
-If you want to update the base screenshots with the new generated set, put the `updateScreenshots` parameter to your Cypress config. This will allow your tests to pass and the base screenshots being replaced by the new ones.
+If you want to update the base screenshots with the new generated set, pass `updateScreenshots=true` as an environment variable, e.g. `cypress run --env updateScreenshots=true`. 
+This will allow your tests to pass and the base screenshots being replaced by the new ones.
 
 ## Todos
 
