@@ -1,5 +1,5 @@
 {
-  "name": "@sqs/cypress-match-screenshot",
+  "name": "cypress-match-screenshot",
   "version": "3.0.0",
   "description": "Utility to take screenshots during a cypress test and match them against previous runs",
   "main": "src/index.js",
@@ -8,8 +8,7 @@
     "lint:fix": "eslint --fix --ext .js src"
   },
   "repository": {
-    "type": "git",
-    "url": "https://code.squarespace.net/scm/webm/cypress-match-screenshot.git"
+    "type": "git"
   },
   "keywords": [
     "cypress",
@@ -19,10 +18,9 @@
   "author": "Julian Burr <hello@julianburr.de>",
   "contributors": [
     "Dave Myers <dmyers@squarespace.com>",
-    "Julian Boilen <jboilen@squarespace.com>"
+    "Julian Boilen <julian@freewill.com>"
   ],
   "license": "MIT",
-  "homepage": "https://code.squarespace.net/projects/WEBM/repos/cypress-match-screenshot",
   "dependencies": {
     "blink-diff": "^1.0.13",
     "cypress-promise": "^1.0.2",
@@ -34,7 +32,7 @@
   "devDependencies": {
     "babel-eslint": "^10.0.1",
     "eslint": "^5.16.0",
-    "eslint-config-squarespace": "^1.0.1",
+    "@freewill/eslint-config": "git+ssh://git@github.com/FreeWillPBC/freewill-eslint.git#0.6.0",
     "eslint-plugin-cypress": "^2.2.1"
   }
 }

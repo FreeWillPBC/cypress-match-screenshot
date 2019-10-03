@@ -1,5 +1,5 @@
 {
-  "extends": ["eslint-config-squarespace/vanilla", "plugin:cypress/recommended"],
+  "extends": ["@freewill", "plugin:cypress/recommended"],
   "env": {
     "node": true,
     "mocha": true,

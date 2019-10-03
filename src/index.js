@@ -1,5 +1,7 @@
 const path = require('path');
+
 const uuid = require('uuid/v1');
+
 const registerTask = require('./task');
 const screenshotMatches = require('./screenshotMatches');
 
@@ -15,7 +17,7 @@ function takeScreenshot({ blackout, capture }, cb) {
         newImage = props.path;
       },
       blackout,
-      capture
+      capture,
     })
     .then(() => {
       cb(newImage);
@@ -26,11 +28,11 @@ function takeScreenshot({ blackout, capture }, cb) {
 const getPaths = (fileName) => {
   const stableSetDirRelative = Cypress.config('matchScreenshotsFolder') || DEFAULT_MATCH_FOLDER;
   const stableSetDir = path.join(Cypress.config('fileServerFolder'), stableSetDirRelative);
-  const stableImagePath = path.join(stableSetDir, fileName + '.png');
+  const stableImagePath = path.join(stableSetDir, `${fileName}.png`);
   const diffDir = path.join(stableSetDir, 'diff');
-  const diffImagePath = path.join(diffDir, fileName + '.png');
+  const diffImagePath = path.join(diffDir, `${fileName}.png`);
   const newDir = path.join(stableSetDir, 'new');
-  const newImagePath = path.join(newDir, fileName + '.png');
+  const newImagePath = path.join(newDir, `${fileName}.png`);
 
   return {
     diffDir,
@@ -42,44 +44,48 @@ const getPaths = (fileName) => {
   };
 };
 
-const attemptToMatch =
-  (fileName, { threshold, thresholdType, maxRetries, blackout, capture }, cb) => {
-    const { stableImagePath, diffImagePath, diffDir } = getPaths(fileName);
+const attemptToMatch = (fileName, {
+  threshold, thresholdType, maxRetries, blackout, capture,
+}, cb) => {
+  const { stableImagePath, diffImagePath, diffDir } = getPaths(fileName);
 
-    // Ensure that the diff folder exists
-    cy.task('mkdir', diffDir);
+  // Ensure that the diff folder exists
+  cy.task('mkdir', diffDir);
 
 
-    cy.log('Taking screenshot');
-    takeScreenshot({ blackout, capture }, (newImage) => {
-      screenshotMatches({
-        oldImage: stableImagePath,
-        newImage: newImage,
-        target: diffImagePath,
-        threshold,
-        thresholdType
-      }, (matches) => {
-        if (matches || maxRetries < 1) {
-          if (matches) {
-            // Delete diffs that don't show anything
-            cy.task('unlink', diffImagePath);
-          }
-          cb({ matches, newImage });
-        } else {
-          // Try again
-          cy.task('unlink', newImage);
-          attemptToMatch(fileName, { threshold, thresholdType, maxRetries: maxRetries - 1, blackout, capture }, cb);
+  cy.log('Taking screenshot');
+  takeScreenshot({ blackout, capture }, (newImage) => {
+    screenshotMatches({
+      oldImage: stableImagePath,
+      newImage,
+      target: diffImagePath,
+      threshold,
+      thresholdType,
+    }, (matches) => {
+      if (matches || maxRetries < 1) {
+        if (matches) {
+          // Delete diffs that don't show anything
+          cy.task('unlink', diffImagePath);
         }
-      });
+        cb({ matches, newImage });
+      }
+      else {
+        // Try again
+        cy.task('unlink', newImage);
+        attemptToMatch(fileName, {
+          threshold, thresholdType, maxRetries: maxRetries - 1, blackout, capture,
+        }, cb);
+      }
     });
-  };
+  });
+};
 
 const makeStable = (fileName, newImage) => {
   const { stableImagePath, diffImagePath } = getPaths(fileName);
   cy.log('Updating stable set');
   cy.task('rename', {
     from: newImage,
-    to: stableImagePath
+    to: stableImagePath,
   });
   cy.task('unlink', diffImagePath);
 };
@@ -113,7 +119,10 @@ const copyToNewDir = (fileName, newImage, cb) => {
  * @param  {Object} options
  */
 function matchScreenshot(
-  name, { threshold = '0', thresholdType = 'percent', maxRetries = 3, blackout = [], capture = 'fullPage' } = {}) {
+  name, {
+    threshold = '0', thresholdType = 'percent', maxRetries = 3, blackout = [], capture = 'fullPage',
+  } = {},
+) {
   const fileNameParts = [this.test.parent.title, this.test.title];
   if (typeof name === 'string') {
     fileNameParts.push(name);
@@ -123,33 +132,36 @@ function matchScreenshot(
   hasStableImage(fileName)
     .then((hasStable) => {
       if (hasStable) {
-        attemptToMatch(fileName, { threshold, thresholdType, maxRetries, blackout, capture },
-          ({ matches, newImage }) => {
-            const shouldUpdateStableSet = Cypress.env('updateScreenshots');
-            if (shouldUpdateStableSet) {
-              if (matches) {
-                cy.log('Screenshots match');
-                cy.task('unlink', newImage);
-              } else {
-                copyToNewDir(fileName, newImage, () => {
-                  makeStable(fileName, newImage);
-                });
-              }
+        attemptToMatch(fileName, {
+          threshold, thresholdType, maxRetries, blackout, capture,
+        },
+        ({ matches, newImage }) => {
+          const shouldUpdateStableSet = Cypress.env('updateScreenshots');
+          if (shouldUpdateStableSet) {
+            if (matches) {
+              cy.log('Screenshots match');
+              cy.task('unlink', newImage);
             }
-            if (!shouldUpdateStableSet) {
-              const deleteScreenshotAndAssertMatch = () =>
-                cy.task('unlink', newImage)
-                  .then(() => { assert.isTrue(matches, 'Screenshots match'); });
-
-              if (matches) {
-                deleteScreenshotAndAssertMatch();
-              } else {
-                copyToNewDir(fileName, newImage, deleteScreenshotAndAssertMatch);
-              }
+            else {
+              copyToNewDir(fileName, newImage, () => {
+                makeStable(fileName, newImage);
+              });
             }
-          });
+          }
+          if (!shouldUpdateStableSet) {
+            const deleteScreenshotAndAssertMatch = () => cy.task('unlink', newImage)
+              .then(() => { assert.isTrue(matches, 'Screenshots match'); });
 
-      } else {
+            if (matches) {
+              deleteScreenshotAndAssertMatch();
+            }
+            else {
+              copyToNewDir(fileName, newImage, deleteScreenshotAndAssertMatch);
+            }
+          }
+        });
+      }
+      else {
         // Does not have existing screenshot
         cy.log('Taking new screenshot');
         takeScreenshot({ blackout, capture }, (newImage) => {
@@ -158,14 +170,13 @@ function matchScreenshot(
         });
       }
     });
-
 }
 /**
  * Register `matchScreenshot` custom command
  * @param  {String} - optional custom name for command
  * @param  {String} - optional custom root dir path
  */
-function register (commandName = 'matchScreenshot') {
+function register(commandName = 'matchScreenshot') {
   Cypress.Commands.add(commandName, matchScreenshot);
 }
 
