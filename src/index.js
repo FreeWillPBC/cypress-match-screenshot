@@ -115,7 +115,7 @@ const buildFileName = (name, test) => {
     fileNameParts.push(name);
   }
   let currentTest = test;
-  while (currentTest) {
+  while (currentTest && currentTest.title) {
     fileNameParts.push(currentTest.title);
     currentTest = currentTest.parent;
   }
