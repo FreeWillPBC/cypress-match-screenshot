@@ -2,8 +2,8 @@ const path = require('path');
 
 const uuid = require('uuid/v1');
 
-const registerTask = require('./task');
 const screenshotMatches = require('./screenshotMatches');
+const registerTask = require('./task');
 
 const DEFAULT_MATCH_FOLDER = 'cypress/match-screenshots';
 
@@ -23,7 +23,6 @@ function takeScreenshot({ blackout, capture }, cb) {
       cb(newImage);
     });
 }
-
 
 const getPaths = (fileName) => {
   const stableSetDirRelative = Cypress.config('matchScreenshotsFolder') || DEFAULT_MATCH_FOLDER;
@@ -51,7 +50,6 @@ const attemptToMatch = (fileName, {
 
   // Ensure that the diff folder exists
   cy.task('mkdir', diffDir);
-
 
   cy.log('Taking screenshot');
   takeScreenshot({ blackout, capture }, (newImage) => {
@@ -111,23 +109,29 @@ const copyToNewDir = (fileName, newImage, cb) => {
     });
 };
 
+const buildFileName = (name, test) => {
+  const fileNameParts = [];
+  if (name) {
+    fileNameParts.push(name);
+  }
+  let currentTest = test;
+  while (currentTest && currentTest.title) {
+    fileNameParts.push(currentTest.title);
+    currentTest = currentTest.parent;
+  }
+  return fileNameParts.reverse().join(' -- ');
+};
+
 /**
  * Takes a screenshot and, if available, matches it against the screenshot
  * from the previous test run. Assertion will fail if the diff is larger than
  * the specified threshold
- * @param  {String} name
  * @param  {Object} options
  */
-function matchScreenshot(
-  name, {
-    threshold = '0', thresholdType = 'percent', maxRetries = 3, blackout = [], capture = 'fullPage',
-  } = {},
-) {
-  const fileNameParts = [this.test.parent.title, this.test.title];
-  if (typeof name === 'string') {
-    fileNameParts.push(name);
-  }
-  const fileName = fileNameParts.join(' -- ');
+function matchScreenshot({
+  name = '', threshold = '0', thresholdType = 'percent', maxRetries = 2, blackout = [], capture = 'fullPage',
+} = {}) {
+  const fileName = buildFileName(name, this.test);
 
   hasStableImage(fileName)
     .then((hasStable) => {
@@ -173,8 +177,7 @@ function matchScreenshot(
 }
 /**
  * Register `matchScreenshot` custom command
- * @param  {String} - optional custom name for command
- * @param  {String} - optional custom root dir path
+ * @param commandName {String} - optional custom name for command
  */
 function register(commandName = 'matchScreenshot') {
   Cypress.Commands.add(commandName, matchScreenshot);

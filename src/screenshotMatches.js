@@ -1,4 +1,6 @@
-module.exports = function({ oldImage, newImage, target, threshold, thresholdType }, cb) {
+module.exports = ({
+  oldImage, newImage, target, threshold, thresholdType,
+}, cb) => {
   // Blink is used via the command line instead of via node
   // Due to dependencies that cause issue with Cypress' bundler.
 
@@ -8,12 +10,13 @@ module.exports = function({ oldImage, newImage, target, threshold, thresholdType
       --threshold-type ${thresholdType} \
       "${oldImage}" "${newImage}"`, {
     failOnNonZeroExit: false,
-    log: false
+    log: false,
   })
     .then(({ code, stderr }) => {
       if (stderr) {
         throw stderr;
-      } else {
+      }
+      else {
         cb(code === 0);
       }
     });
