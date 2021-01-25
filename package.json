@@ -30,9 +30,9 @@
   },
   "types": "types/index.d.ts",
   "devDependencies": {
+    "@freewill/eslint-config": "git+ssh://git@github.com/FreeWillPBC/freewill-eslint.git#0.12.0",
     "babel-eslint": "^10.0.1",
-    "eslint": "^5.16.0",
-    "@freewill/eslint-config": "git+ssh://git@github.com/FreeWillPBC/freewill-eslint.git#0.6.0",
+    "eslint": "^7.18.0",
     "eslint-plugin-cypress": "^2.2.1"
   }
 }
