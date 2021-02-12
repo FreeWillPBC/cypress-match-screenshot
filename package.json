@@ -1,6 +1,6 @@
 {
-  "name": "cypress-match-screenshot",
-  "version": "3.1.1",
+  "name": "@freewillpbc/cypress-match-screenshot",
+  "version": "3.2.0",
   "description": "Utility to take screenshots during a cypress test and match them against previous runs",
   "main": "src/index.js",
   "scripts": {
@@ -21,6 +21,12 @@
     "Julian Boilen <julian@freewill.com>"
   ],
   "license": "MIT",
+  "engines": {
+    "node": "^12"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "dependencies": {
     "blink-diff": "^1.0.13",
     "cypress-promise": "^1.0.2",
@@ -30,7 +36,7 @@
   },
   "types": "types/index.d.ts",
   "devDependencies": {
-    "@freewill/eslint-config": "git+ssh://git@github.com/FreeWillPBC/freewill-eslint.git#0.12.0",
+    "@freewillpbc/eslint-config": "^3.0.0",
     "babel-eslint": "^10.0.1",
     "eslint": "^7.18.0",
     "eslint-plugin-cypress": "^2.2.1"

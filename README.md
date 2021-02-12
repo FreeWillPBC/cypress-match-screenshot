@@ -109,3 +109,18 @@ This will allow your tests to pass and the base screenshots being replaced by th
 - [ ] Somehow show the diff image whenever the check fails
 - [ ] Test and verify CI behaviour of this plugin
 
+## Contributing
+
+We publish this package manually.
+
+1. In your PR, include a version bump commit:
+    ```sh
+    npm version minor
+    ```
+
+2. After merging to master, publish from your dev machine:
+    ```sh
+    npm publish
+    ```
+
+3. Verify it worked by [checking our packages](https://github.com/orgs/FreeWillPBC/packages)
