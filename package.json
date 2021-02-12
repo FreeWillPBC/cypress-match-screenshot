@@ -8,7 +8,8 @@
     "lint:fix": "eslint --fix --ext .js src"
   },
   "repository": {
-    "type": "git"
+    "type": "git",
+    "url": "https://github.com/FreeWillPBC/cypress-match-screenshot.git"
   },
   "keywords": [
     "cypress",
